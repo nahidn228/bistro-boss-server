@@ -140,9 +140,9 @@ async function run() {
     app.get("/menu/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      console.log({ id, query });
+      // console.log({ id, query });
       const result = await menuCollection.findOne(query);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
     app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
@@ -209,10 +209,20 @@ async function run() {
         currency: "usd",
         payment_method_types: ["card"],
       });
-      console.log(paymentIntent, "from paymentIntent");
+      // console.log(paymentIntent, "from paymentIntent");
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    app.get("/payments/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      if (email !== req.decoded.email) {
+        return res.status(403).send("forbidden access");
+      }
+      const result = await paymentsCollection.find(query).toArray();
+      res.send(result);
     });
 
     app.post("/payments", async (req, res) => {
@@ -220,7 +230,7 @@ async function run() {
       const paymentResult = await paymentsCollection.insertOne(payment);
       // carefully delete each item from the card
 
-      console.log("payment Info", payment);
+      // console.log("payment Info", payment);
       const query = {
         _id: {
           $in: payment.cartIds.map((id) => new ObjectId(id)),
