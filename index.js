@@ -249,11 +249,19 @@ async function run() {
       //this is not the best way
       // const payments = await paymentsCollection.find().toArray();
       // const revenue = payments.reduce((total, payment) => total +payment.price, 0);
-      const result = await paymentsCollection.aggregate([
-        {
-          
-        }
-      ]);
+      const result = await paymentsCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: "$price",
+              },
+            },
+          },
+        ])
+        .toArray();
+      const revenue = result.length > 0 ? result[0].totalRevenue : 0;
 
       res.send({
         users,
