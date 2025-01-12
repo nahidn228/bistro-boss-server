@@ -240,6 +240,29 @@ async function run() {
       res.send({ paymentResult, deleteResult });
     });
 
+    // stats or analytics
+    app.get("/admin-stats", async (req, res) => {
+      const users = await userCollection.estimatedDocumentCount();
+      const menuItem = await menuCollection.estimatedDocumentCount();
+      const orders = await paymentsCollection.estimatedDocumentCount();
+
+      //this is not the best way
+      // const payments = await paymentsCollection.find().toArray();
+      // const revenue = payments.reduce((total, payment) => total +payment.price, 0);
+      const result = await paymentsCollection.aggregate([
+        {
+          
+        }
+      ]);
+
+      res.send({
+        users,
+        menuItem,
+        orders,
+        revenue,
+      });
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
