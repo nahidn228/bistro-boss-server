@@ -226,8 +226,13 @@ async function run() {
     });
 
     app.post("/payments", async (req, res) => {
-      const payment = req.body;
-      const paymentResult = await paymentsCollection.insertOne(payment);
+      const { menuItemIds, ...payment } = req.body;
+      const ids = menuItemIds.map((item) => new ObjectId(item));
+      // console.log(payment);
+      const paymentResult = await paymentsCollection.insertOne({
+        ...payment,
+        menuItemIds: ids,
+      });
       // carefully delete each item from the card
 
       // console.log("payment Info", payment);
@@ -241,7 +246,7 @@ async function run() {
     });
 
     // stats or analytics
-    app.get("/admin-stats", async (req, res) => {
+    app.get("/admin-stats", verifyToken, verifyAdmin, async (req, res) => {
       const users = await userCollection.estimatedDocumentCount();
       const menuItem = await menuCollection.estimatedDocumentCount();
       const orders = await paymentsCollection.estimatedDocumentCount();
@@ -269,6 +274,37 @@ async function run() {
         orders,
         revenue,
       });
+    });
+
+    // Order status
+    //using aggregate pipeline
+    app.get("/order-stats", async (req, res) => {
+      const result = await paymentsCollection
+        .aggregate([
+          {
+            $unwind: "$menuItemIds",
+          },
+          {
+            $lookup: {
+              from: "menu",
+              localField: "menuItemIds",
+              foreignField: "_id",
+              as: "menuItems",
+            },
+          },
+          {
+            $unwind: "$menuItems",
+          },
+          {
+            $group: {
+              _id: "$menuItems.category",
+              quantity: { $sum: 1 },
+              revenue: { $sum: "$menuItems.price" },
+            },
+          },
+        ])
+        .toArray();
+      res.send(result);
     });
 
     console.log(
